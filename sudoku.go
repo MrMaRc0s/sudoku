@@ -3,54 +3,48 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
-const (
-	size  = 9
-	empty = '.'
-)
+const size = 9
 
-func main() {
-	if len(os.Args) != 10 {
-		fmt.Println("Error")
-		return
-	}
+// isValidSudoku checks if the given board is valid
+func isValidSudoku(board [size][size]int) bool {
+	rows := [size][size]bool{}
+	cols := [size][size]bool{}
+	blocks := [size][size]bool{}
 
-	board := make([][]byte, size)
-	for i := 0; i < size; i++ {
-		if len(os.Args[i+1]) != size {
-			fmt.Println("Error")
-			return
-		}
-		board[i] = []byte(os.Args[i+1])
-		for _, ch := range board[i] {
-			if (ch < '1' || ch > '9') && ch != empty {
-				fmt.Println("Error")
-				return
-			}
-		}
-	}
-
-	if !solveSudoku(board) {
-		fmt.Println("Error")
-		return
-	}
-
-	printBoard(board)
-}
-
-func solveSudoku(board [][]byte) bool {
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
-			if board[i][j] == empty {
-				for num := '1'; num <= '9'; num++ {
-					if isValid(board, i, j, byte(num)) {
-						board[i][j] = byte(num)
-						if solveSudoku(board) {
-							return true
-						}
-						board[i][j] = empty
+			num := board[i][j]
+			if num == 0 {
+				continue
+			}
+			num--
+			blockIndex := (i/3)*3 + j/3
+
+			if rows[i][num] || cols[j][num] || blocks[blockIndex][num] {
+				return false
+			}
+			rows[i][num] = true
+			cols[j][num] = true
+			blocks[blockIndex][num] = true
+		}
+	}
+	return true
+}
+
+// solveSudoku solves the Sudoku puzzle using backtracking
+func solveSudoku(board *[size][size]int) bool {
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			if board[i][j] == 0 {
+				for num := 1; num <= size; num++ {
+					board[i][j] = num
+					if isValidSudoku(*board) && solveSudoku(board) {
+						return true
 					}
+					board[i][j] = 0
 				}
 				return false
 			}
@@ -59,24 +53,63 @@ func solveSudoku(board [][]byte) bool {
 	return true
 }
 
-func isValid(board [][]byte, row, col int, num byte) bool {
-	for i := 0; i < size; i++ {
-		if board[row][i] == num || board[i][col] == num || board[3*(row/3)+i/3][3*(col/3)+i%3] == num {
-			return false
-		}
-	}
-	return true
-}
-
-func printBoard(board [][]byte) {
+// printBoard prints the Sudoku board
+func printBoard(board [size][size]int) {
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
-			fmt.Printf("%c", board[i][j])
-			if j < size-1 {
-				fmt.Print(" ")
-			}
+			fmt.Printf("%d ", board[i][j])
 		}
 		fmt.Println()
 	}
 }
 
+// parseInput parses the command line arguments into a Sudoku board
+func parseInput(args []string) ([size][size]int, error) {
+	var board [size][size]int
+
+	if len(args) != size {
+		return board, fmt.Errorf("invalid input")
+	}
+
+	for i, arg := range args {
+		if len(arg) != size {
+			return board, fmt.Errorf("invalid input")
+		}
+		for j := 0; j < size; j++ {
+			if arg[j] == '.' {
+				board[i][j] = 0
+			} else {
+				num, err := strconv.Atoi(string(arg[j]))
+				if err != nil || num < 1 || num > size {
+					return board, fmt.Errorf("invalid input")
+				}
+				board[i][j] = num
+			}
+		}
+	}
+	return board, nil
+}
+
+func main() {
+	if len(os.Args) != 10 {
+		fmt.Println("Error")
+		return
+	}
+
+	board, err := parseInput(os.Args[1:])
+	if err != nil {
+		fmt.Println("Error")
+		return
+	}
+
+	if !isValidSudoku(board) {
+		fmt.Println("Error")
+		return
+	}
+
+	if solveSudoku(&board) {
+		printBoard(board)
+	} else {
+		fmt.Println("Error")
+	}
+}
