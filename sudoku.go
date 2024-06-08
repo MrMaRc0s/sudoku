@@ -5,31 +5,51 @@ import (
 	"os"
 )
 
-const N = 9
+const (
+	size  = 9
+	empty = '.'
+)
 
-// Check if num can be placed at board[row][col]
-func isValid(board [N][N]int, row, col, num int) bool {
-	boxStartRow, boxStartCol := 3*(row/3), 3*(col/3)
-	for i := 0; i < N; i++ {
-		if board[row][i] == num || board[i][col] == num || board[boxStartRow+i/3][boxStartCol+i%3] == num {
-			return false
+func main() {
+	if len(os.Args) != 10 {
+		fmt.Println("Error")
+		return
+	}
+
+	board := make([][]byte, size)
+	for i := 0; i < size; i++ {
+		if len(os.Args[i+1]) != size {
+			fmt.Println("Error")
+			return
+		}
+		board[i] = []byte(os.Args[i+1])
+		for _, ch := range board[i] {
+			if (ch < '1' || ch > '9') && ch != empty {
+				fmt.Println("Error")
+				return
+			}
 		}
 	}
-	return true
+
+	if !solveSudoku(board) {
+		fmt.Println("Error")
+		return
+	}
+
+	printBoard(board)
 }
 
-// Solve the Sudoku puzzle using backtracking
-func solveSudoku(board [N][N]int) bool {
-	for row := 0; row < N; row++ {
-		for col := 0; col < N; col++ {
-			if board[row][col] == 0 {
-				for num := 1; num <= N; num++ {
-					if isValid(board, row, col, num) {
-						board[row][col] = num
+func solveSudoku(board [][]byte) bool {
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			if board[i][j] == empty {
+				for num := '1'; num <= '9'; num++ {
+					if isValid(board, i, j, byte(num)) {
+						board[i][j] = byte(num)
 						if solveSudoku(board) {
 							return true
 						}
-						board[row][col] = 0
+						board[i][j] = empty
 					}
 				}
 				return false
@@ -39,12 +59,20 @@ func solveSudoku(board [N][N]int) bool {
 	return true
 }
 
-// Print the Sudoku board
-func printBoard(board [N][N]int) {
-	for row := 0; row < N; row++ {
-		for col := 0; col < N; col++ {
-			fmt.Print(board[row][col])
-			if col != N-1 {
+func isValid(board [][]byte, row, col int, num byte) bool {
+	for i := 0; i < size; i++ {
+		if board[row][i] == num || board[i][col] == num || board[3*(row/3)+i/3][3*(col/3)+i%3] == num {
+			return false
+		}
+	}
+	return true
+}
+
+func printBoard(board [][]byte) {
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			fmt.Printf("%c", board[i][j])
+			if j < size-1 {
 				fmt.Print(" ")
 			}
 		}
@@ -52,40 +80,3 @@ func printBoard(board [N][N]int) {
 	}
 }
 
-// Convert character to digit
-func charToDigit(c byte) int {
-	return int(c - '0')
-}
-
-func main() {
-	if len(os.Args) != 10 {
-		fmt.Println("Error")
-		return
-	}
-
-	var board [N][N]int
-	for i := 1; i <= N; i++ {
-		if len(os.Args[i]) != N {
-			fmt.Println("Error")
-			return
-		}
-		for j := 0; j < N; j++ {
-			if os.Args[i][j] == '.' {
-				board[i-1][j] = 0
-			} else {
-				num := charToDigit(os.Args[i][j])
-				if num < 1 || num > 9 {
-					fmt.Println("Error")
-					return
-				}
-				board[i-1][j] = num
-			}
-		}
-	}
-
-	if solveSudoku(board) {
-		printBoard(board)
-	} else {
-		fmt.Println("Error")
-	}
-}
