@@ -36,48 +36,49 @@ func main() {
 }
 
 // parseInput parses the command line arguments into a Sudoku board
-func parseInput(args []string) ([size][size]int, error) {
+// checking if the input in the arguments is valid
+func parseInput(raws []string) ([size][size]int, error) {
 	var board [size][size]int
-	if len(args) != size {
+	if len(raws) != size {
 		return board, fmt.Errorf("invalid input")
 	}
-	for i, arg := range args {
-		if len(arg) != size {
+	for args, raw := range raws {
+		if len(raw) != size {
 			return board, fmt.Errorf("invalid input")
 		}
-		for j := 0; j < size; j++ {
-			if arg[j] == '.' {
-				board[i][j] = 0
+		for chars := 0; chars < size; chars++ {
+			if raw[chars] == '.' {
+				board[args][chars] = 0
 			} else {
-				num, err := strconv.Atoi(string(arg[j]))
+				num, err := strconv.Atoi(string(raw[chars]))
 				if err != nil || num < 1 || num > size {
 					return board, fmt.Errorf("invalid input")
 				}
-				board[i][j] = num
+				board[args][chars] = num
 			}
 		}
 	}
 	return board, nil
 }
 
-// isValidSudoku checks if the given board is valid
+// isValidSudoku checks if the given board is valid for a sudoku board
 func isValidSudoku(board [size][size]int) bool {
 	rows := [size][size]bool{}
 	cols := [size][size]bool{}
 	blocks := [size][size]bool{}
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			num := board[i][j]
+	for rawin := 0; rawin < size; rawin++ { // rawin variable is for raw index in the sudoku cells
+		for colin := 0; colin < size; colin++ { // colin variable is for column index in the sudoku cells
+			num := board[rawin][colin]
 			if num == 0 {
 				continue
 			}
 			num--
-			blockIndex := (i/3)*3 + j/3
-			if rows[i][num] || cols[j][num] || blocks[blockIndex][num] {
+			blockIndex := (rawin/3)*3 + colin/3 // calculates which 3x3 sub-grid the current cell belongs to
+			if rows[rawin][num] || cols[colin][num] || blocks[blockIndex][num] {
 				return false
 			}
-			rows[i][num] = true
-			cols[j][num] = true
+			rows[rawin][num] = true
+			cols[colin][num] = true
 			blocks[blockIndex][num] = true
 		}
 	}
@@ -93,18 +94,18 @@ func hasUniqueSolution(board [size][size]int) bool {
 
 // solveAndCountSolutions solves the Sudoku puzzle and counts the number of solutions
 func solveAndCountSolutions(board *[size][size]int, solutions *int) bool {
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			if board[i][j] == 0 {
+	for rawin := 0; rawin < size; rawin++ {
+		for colin := 0; colin < size; colin++ {
+			if board[rawin][colin] == 0 {
 				for num := 1; num <= size; num++ {
-					if isValidMove(board, i, j, num) {
-						board[i][j] = num
+					if isValidMove(board, rawin, colin, num) {
+						board[rawin][colin] = num
 						if solveAndCountSolutions(board, solutions) {
 							if *solutions > 1 {
 								return false
 							}
 						}
-						board[i][j] = 0
+						board[rawin][colin] = 0
 					}
 				}
 				return false
@@ -117,24 +118,25 @@ func solveAndCountSolutions(board *[size][size]int, solutions *int) bool {
 
 // isValidMove checks if placing num in board[row][col] is valid
 func isValidMove(board *[size][size]int, row, col, num int) bool {
-	for i := 0; i < size; i++ {
-		if board[row][i] == num || board[i][col] == num || board[row-row%3+i/3][col-col%3+i%3] == num {
+	for rawin := 0; rawin < size; rawin++ {
+		if board[row][rawin] == num || board[rawin][col] == num || board[row-row%3+rawin/3][col-col%3+rawin%3] == num {
 			return false
 		}
 	}
 	return true
 }
 
+// Sudoku solution
 func solveSudoku(board *[size][size]int) bool {
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			if board[i][j] == 0 {
+	for rawin := 0; rawin < size; rawin++ {
+		for colin := 0; colin < size; colin++ {
+			if board[rawin][colin] == 0 {
 				for num := 1; num <= size; num++ {
-					board[i][j] = num
+					board[rawin][colin] = num
 					if isValidSudoku(*board) && solveSudoku(board) {
 						return true
 					}
-					board[i][j] = 0
+					board[rawin][colin] = 0
 				}
 				return false
 			}
@@ -145,9 +147,9 @@ func solveSudoku(board *[size][size]int) bool {
 
 // printBoard prints the Sudoku board
 func printBoard(board [size][size]int) {
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			fmt.Printf("%d ", board[i][j])
+	for rawin := 0; rawin < size; rawin++ {
+		for colin := 0; colin < size; colin++ {
+			fmt.Printf("%d ", board[rawin][colin])
 		}
 		fmt.Println()
 	}
