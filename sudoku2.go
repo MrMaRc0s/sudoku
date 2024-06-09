@@ -30,6 +30,8 @@ func main() {
 
 	if solveSudoku(&board) {
 		printBoard(board)
+	} else {
+		fmt.Println("Error")
 	}
 }
 
